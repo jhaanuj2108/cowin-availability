@@ -22,9 +22,7 @@ class SlotAvailableByPincode:
         self.date_var = self.date_var.strftime('%d-%m-%Y')
         request_api = f"https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode={self.pincode}&date={self.date_var}"
 
-        response = requests.get(request_api, headers={"accept": "application/json", "Accept-Language": "hi_IN",
-                                                      "user-agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"}).json()[
-            'centers']
+        response = requests.get(request_api).json()['centers']
 
         for each in response:
             for values in each['sessions']:
