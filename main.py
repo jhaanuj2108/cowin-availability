@@ -1,12 +1,7 @@
-# This is a sample Python script.
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import requests
 import time
-# import pandas as pd
-from SlotByPin import SlotAvailableByPincode
-from SlotByDist import SlotAvailableByDistrict
+from SlotById import SlotAvailableByID
 from Notify import Notify
 import requests
 from firebase_admin import credentials
@@ -64,7 +59,7 @@ def check_availabilty_pincode():
         # today_date = date.today().strftime('%d-%m-%Y')
         to = data[0]
         id_list = data[1]
-        pin_obj = SlotAvailableByPincode(pincode=pincode)
+        pin_obj = SlotAvailableByID(target=pincode, mode = "Pin")
         pin_obj.get_slot_availability()
         flag, index, slots, age, date = pin_obj.return_list[0], pin_obj.return_list[1], pin_obj.return_list[2], pin_obj.return_list[3],pin_obj.return_list[4]
         if flag == True:
@@ -75,10 +70,9 @@ def check_availabilty_pincode():
 def check_availabilty_district():
     from datetime import date
     for district_id, data in dict_district.items():
-        # today_date = date.today().strftime('%d-%m-%Y')
         to = data[0]
         id_list = data[1]
-        dist_obj = SlotAvailableByDistrict(district_id=district_id)
+        dist_obj = SlotAvailableByID(target=district_id, mode = "District")
         dist_obj.get_slot_availability()
         flag, index, slots, age, date = dist_obj.return_list[0], dist_obj.return_list[1], dist_obj.return_list[2], dist_obj.return_list[3], dist_obj.return_list[4]
         if flag == True:
@@ -115,8 +109,8 @@ if __name__ == '__main__':
             check_availabilty_pincode()
             check_availabilty_district()
             print("5 min break")
-            time.sleep(300)
+            time.sleep(900)
         except:
             print("Cowin API Down")
             print("5 min break")
-            time.sleep(300)
+            time.sleep(900)
