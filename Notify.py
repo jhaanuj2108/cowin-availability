@@ -9,6 +9,9 @@ class Notify:
         self.slots = slots
         self.age = age
         self.date = date
+
+
+    def send_mail(self):
         gmail_user = os.getenv('gmail_user')
         gmail_password = os.getenv('gmail_password')
         sent_from = gmail_user
@@ -22,7 +25,7 @@ class Notify:
         msg.set_content(body)
         msg['Subject'] = subject
         msg['From'] = sent_from
-        msg['To'] = to
+        msg['To'] = self.to
 
         try:
             server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
@@ -37,8 +40,10 @@ class Notify:
             # server.close()
 
             print(f"Email sent to {self.to}")
+            return True
         except:
             print('Something went wrong...')
+            return False
 
 
 

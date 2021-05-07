@@ -48,7 +48,7 @@ class SlotAvailableByDistrict:
             return
 
         except:
-            print("except")
+            print("except: District:", self.district_id)
             self.return_list.append(False)
             self.return_list.append(0)
             self.return_list.append(0)
