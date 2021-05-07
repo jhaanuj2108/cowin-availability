@@ -20,7 +20,8 @@ dict_pincode = dict()
 dict_district = dict()
 
 def get_endpoint_data(users_table):
-
+    dict_pincode.clear()
+    dict_district.clear()
     for each in users_table.stream():
         # print("This is being printed")
         data_dict = dict()
