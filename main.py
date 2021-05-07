@@ -68,8 +68,9 @@ def check_availabilty_pincode():
         pin_obj.get_slot_availability()
         flag, index, slots, age, date = pin_obj.return_list[0], pin_obj.return_list[1], pin_obj.return_list[2], pin_obj.return_list[3],pin_obj.return_list[4]
         if flag == True:
-            Notify(to, index, slots, age, date)
-            remove_from_firebase(id_list, to)
+            email_obj = Notify(to, index, slots, age, date)
+            if email_obj.send_mail():
+                remove_from_firebase(id_list, to)
 
 def check_availabilty_district():
     from datetime import date
@@ -81,8 +82,9 @@ def check_availabilty_district():
         dist_obj.get_slot_availability()
         flag, index, slots, age, date = dist_obj.return_list[0], dist_obj.return_list[1], dist_obj.return_list[2], dist_obj.return_list[3], dist_obj.return_list[4]
         if flag == True:
-            Notify(to, index, slots, age, date)
-            remove_from_firebase(id_list, to)
+            email_obj = Notify(to, index, slots, age, date)
+            if email_obj.send_mail():
+                remove_from_firebase(id_list, to)
 
 
 def remove_from_firebase(id_list, to):

@@ -46,7 +46,7 @@ class SlotAvailableByPincode:
             return
 
         except:
-            print("except")
+            print("except: Pincode:", self.pincode)
             self.return_list.append(False)
             self.return_list.append(0)
             self.return_list.append(0)
