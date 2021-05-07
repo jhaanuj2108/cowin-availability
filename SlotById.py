@@ -2,7 +2,7 @@ import requests
 import datetime
 class SlotAvailableByID:
 
-    def __init__(self, target, api, mode, age='18', date_var=None):
+    def __init__(self, target, mode, age='18', date_var=None):
         self.target = target
         self.date_var = date_var
         self.age = age
