@@ -8,82 +8,112 @@ import time
 from SlotByPin import SlotAvailableByPincode
 from SlotByDist import SlotAvailableByDistrict
 from Notify import Notify
+import requests
+from firebase_admin import credentials
+from firebase_admin import firestore
+import firebase_admin
+cred = credentials.Certificate('key.json')
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
-
-# df_pincode = pd.DataFrame(columns=['Date', 'Email', 'Pincode'])
-# df_district = pd.DataFrame(columns=['Date', 'Email', 'District_id'])
 dict_pincode = dict()
 dict_district = dict()
 
-def get_endpoint_data():
-    # Use a breakpoint in the code line below to debug your script.
-    request_api = "https://cowin-realpython.herokuapp.com/list"
-    response = requests.get(request_api).json()
-    for each in response:
+def get_endpoint_data(users_table):
+
+    for each in users_table.stream():
         # print("This is being printed")
         data_dict = dict()
-        if bool(each) and each['optin'] == "1":
-            if each['type'] == "1":
-                pincode = each['pincode']
-                email = each['email']
-                # data_dict['Date'] = each['date']
-                # data_dict['Email'] = each['email']
-                # data_dict['Pincode'] = each['pincode']
-                # df_pincode = df_pincode.append(data_dict, ignore_index=True)
+        if each.to_dict()['optin'] == "1":
+            if each.to_dict()['type'] == "1":
+                pincode = each.to_dict()['pincode']
+                email = each.to_dict()['email']
+
                 if pincode in dict_pincode:
-                    dict_pincode[pincode].append(email)
+                    dict_pincode[pincode][0].append(email)
+                    dict_pincode[pincode][1].append(each.id)
                 else:
                     dict_pincode[pincode] = list()
-                    dict_pincode[pincode].append(email)
+                    dict_pincode[pincode].append([])
+                    dict_pincode[pincode].append([])
+                    dict_pincode[pincode][0].append(email)
+                    dict_pincode[pincode][1].append(each.id)
                 # check_availabilty_pincode(each)
 
-            elif each['type'] == "2":
-                district_id = each['district']
-                email = each['email']
-                # data_dict['Date'] = each['date']
-                # data_dict['Email'] = each['email']
-                # data_dict['District'] = each['district']
-                # df_district = df_district.append(data_dict, ignore_index=True)
+            elif each.to_dict()['type'] == "2":
+                district_id = each.to_dict()['district']
+                email = each.to_dict()['email']
+
                 if district_id in dict_district :
-                    dict_district[district_id].append(email)
+                    dict_district[district_id][0].append(email)
+                    dict_district[district_id][1].append(each.id)
                 else:
                     dict_district[district_id] = list()
-                    dict_district[district_id].append(email)
+                    dict_district[district_id].append([])
+                    dict_district[district_id].append([])
+                    dict_district[district_id][0].append(email)
+                    dict_district[district_id][1].append(each.id)
                 # check_availabilty_district(each)
 
 
 
 def check_availabilty_pincode():
     from datetime import date
-    for pincode, emails in dict_pincode.items():
+    for pincode, data in dict_pincode.items():
         # today_date = date.today().strftime('%d-%m-%Y')
-        to = emails
+        to = data[0]
+        id_list = data[1]
         pin_obj = SlotAvailableByPincode(pincode=pincode)
         pin_obj.get_slot_availability()
         flag, index, slots, age, date = pin_obj.return_list[0], pin_obj.return_list[1], pin_obj.return_list[2], pin_obj.return_list[3],pin_obj.return_list[4]
         if flag == True:
             Notify(to, index, slots, age, date)
+            remove_from_firebase(id_list, to)
 
 def check_availabilty_district():
     from datetime import date
-    for district_id, emails in dict_district.items():
+    for district_id, data in dict_district.items():
         # today_date = date.today().strftime('%d-%m-%Y')
-        to = emails
+        to = data[0]
+        id_list = data[1]
         dist_obj = SlotAvailableByDistrict(district_id=district_id)
         dist_obj.get_slot_availability()
         flag, index, slots, age, date = dist_obj.return_list[0], dist_obj.return_list[1], dist_obj.return_list[2], dist_obj.return_list[3], dist_obj.return_list[4]
         if flag == True:
             Notify(to, index, slots, age, date)
+            remove_from_firebase(id_list, to)
 
 
+def remove_from_firebase(id_list, to):
+    url = "https://cowin-realpython.herokuapp.com/update?id="
+
+    for i in range(len(id_list)):
+        new_url = url + id_list[i]
+        requests.post(new_url)
+        print('Removed: \n\tEmail:'+to[i] +' \n\tUID:'+id_list[i]+'\n')
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
+
     while True:
-        # print("This is being printed")
-        get_endpoint_data()
-        check_availabilty_pincode()
-        check_availabilty_district()
-        time.sleep(300)
+        from datetime import date
+        test_url = "https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=294&date="
+        test_date = date.today().strftime('%d-%m-%Y')
+        test_url += test_date
 
-
+        try:
+            test_response = requests.get(test_url, headers={"accept": "application/json", "Accept-Language": "hi_IN",
+                                                          "user-agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"}).json()['centers']
+            # print("Cowin API Working")
+            usersRef = db.collection('cowinUsers')
+            testusersRef = db.collection('testcowinUsers')
+            users_table = usersRef
+            get_endpoint_data(users_table)
+            check_availabilty_pincode()
+            check_availabilty_district()
+            print("5 min break")
+            time.sleep(300)
+        except:
+            print("Cowin API Down")
+            print("5 min break")
+            time.sleep(300)
