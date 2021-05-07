@@ -1,13 +1,13 @@
 import requests
 import datetime
+class SlotAvailableByID:
 
-class SlotAvailableByPincode:
-
-    def __init__(self, pincode, age='18', date_var=None):
-        self.pincode = pincode
+    def __init__(self, target, api, mode, age='18', date_var=None):
+        self.target = target
         self.date_var = date_var
         self.age = age
         self.return_list = list()
+        self.mode = mode
 
 
     def get_slot_availability(self):
@@ -18,8 +18,9 @@ class SlotAvailableByPincode:
             self.date_var = datetime.datetime.strptime(self.date_var, '%Y-%m-%d')
 
         self.date_var = self.date_var.strftime('%d-%m-%Y')
-        request_api = f"https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByPin?pincode={self.pincode}&date={self.date_var}"
-
+        base_url = 'https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarBy'
+        param = "pincode" if self.mode == "Pin" else "district_id"
+        request_api = base_url + self.mode+"?"+param+"="+str(self.target)+"&date="+self.date_var
         try:
             response = requests.get(request_api, headers={"accept":"application/json", "Accept-Language": "hi_IN", "user-agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"}).json()['centers']
 
@@ -46,7 +47,7 @@ class SlotAvailableByPincode:
             return
 
         except:
-            print("except: Pincode:", self.pincode)
+            print("except: Pincode:", self.target)
             self.return_list.append(False)
             self.return_list.append(0)
             self.return_list.append(0)
