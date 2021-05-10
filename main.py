@@ -30,21 +30,24 @@ def get_endpoint_data_to_pandas(users_table):
     global df_district
     dict_pincode.clear()
     dict_district.clear()
-
+    last_sent_mail = datetime.datetime.now() - datetime.timedelta(hours=3)
     for each in users_table.stream():
         print("Taking data from Firebase")
         data_dict = dict()
         if each.to_dict()['type'] == "1":
-            pincode = each.to_dict()['pincode']
-            email = each.to_dict()['email']
             data_dict['email'] = each.to_dict()['email']
             data_dict['pincode'] = each.to_dict()['pincode']
             data_dict['optin'] = each.to_dict()['optin']
-            data_dict['last_sent_mail'] = ''
+            data_dict['last_sent_mail'] = last_sent_mail
+            print(data_dict['last_sent_mail'])
             data_dict['type'] = each.to_dict()['type']
             data_dict['no_of_mails_sent'] = 0
 
+            if data_dict['last_sent_mail'] == '':
+                data_dict['last_sent_mail'] = datetime.datetime.now() - datetime.timedelta(hours=3)
+
             df_pincode = df_pincode.append(data_dict, ignore_index=True)
+            df_pincode['last_sent_mail'] = pd.to_datetime(df_pincode["last_sent_mail"])
             users_table.document(each.id).delete()
 
         elif each.to_dict()['type'] == "2":
@@ -53,11 +56,12 @@ def get_endpoint_data_to_pandas(users_table):
             data_dict['email'] = each.to_dict()['email']
             data_dict['district'] = each.to_dict()['district']
             data_dict['optin'] = each.to_dict()['optin']
-            data_dict['last_sent_mail'] = ''
+            data_dict['last_sent_mail'] = last_sent_mail
             data_dict['type'] = each.to_dict()['type']
             data_dict['no_of_mails_sent'] = 0
 
             df_district = df_district.append(data_dict, ignore_index=True)
+            df_district['last_sent_mail'] = pd.to_datetime(df_district["last_sent_mail"])
             users_table.document(each.id).delete()
 
     remove_duplicates()
@@ -65,8 +69,8 @@ def get_endpoint_data_to_pandas(users_table):
 def remove_duplicates():
     global df_pincode
     global df_district
-    df_district.drop_duplicates(inplace=True)
-    df_pincode.drop_duplicates(inplace=True)
+    df_district.drop_duplicates(['email', 'district','optin'],inplace=True)
+    df_pincode.drop_duplicates(['email', 'pincode','optin'], inplace=True)
     print("Duplicates Removed")
 
 
@@ -86,41 +90,42 @@ def get_email_and_index(type, value):
     elif type == 'district':
         df = df_district
     time_now = datetime.datetime.now()
-    try:
-        to = df[(df[type] == value) & (df['optin'] == '1') & (
-                int((time_now - df['last_sent_mail']).seconds / 3600) >= 2) & (df['no_of_mails_sent'] < 10)]['email'].values
-        index = df[(df[type] == value) & (df['optin'] == '1') & (
-                    int((time_now - df['last_sent_mail']).seconds / 3600) >= 2) & (df['no_of_mails_sent'] < 10)].index
+    to = df[(df[type] == value) & (df['optin'] == '1') & ((time_now - df['last_sent_mail']).astype('timedelta64[h]')>=2)
+            & (df['no_of_mails_sent'] < 10)]['email'].values
+    index = df[(df[type] == value) & (df['optin'] == '1') & ((time_now - df['last_sent_mail']).astype('timedelta64[h]')>=2)
+               & (df['no_of_mails_sent'] < 10)].index
 
-    except:
-        to = df[(df[type] == value) & (df['optin'] == '1') & (
-                df['no_of_mails_sent'] < 10)]['email'].values
-        index = df[(df[type] == value) & (df['optin'] == '1') & (
-                df['no_of_mails_sent'] < 10)].index
+    # except:
+    #     to = df[(df[type] == value) & (df['optin'] == '1') & (
+    #             df['no_of_mails_sent'] < 10)]['email'].values
+    #     index = df[(df[type] == value) & (df['optin'] == '1') & (
+    #             df['no_of_mails_sent'] < 10)].index
 
     return to.tolist(), index.tolist()
 
 def check_availabilty_pincode(pin_list):
     for pincode in pin_list:
-        pin_obj = SlotAvailableByID(target=pincode, mode = "Pin")
+        pin_obj = SlotAvailableByID(target=pincode, mode = "Pin", age=45)
         pin_obj.get_slot_availability()
         flag, hospital, slots, age, date = pin_obj.return_list[0], pin_obj.return_list[1], pin_obj.return_list[2], pin_obj.return_list[3],pin_obj.return_list[4]
         if flag == True:
             to, index = get_email_and_index('pincode', pincode)
-            email_obj = Notify(to, hospital, slots, age, date)
-            if email_obj.send_mail():
-                change_dataframe_data('pincode', index)
+            if to != []:
+                email_obj = Notify(to, hospital, slots, age, date)
+                if email_obj.send_mail():
+                    change_dataframe_data('pincode', index)
 
 def check_availabilty_district(dist_list):
     for district_id in dist_list:
-        dist_obj = SlotAvailableByID(target=district_id, mode = "District")
+        dist_obj = SlotAvailableByID(target=district_id, mode = "District", age=45)
         dist_obj.get_slot_availability()
         flag, hospital, slots, age, date = dist_obj.return_list[0], dist_obj.return_list[1], dist_obj.return_list[2], dist_obj.return_list[3], dist_obj.return_list[4]
         if flag == True:
             to, index = get_email_and_index('district', district_id)
-            email_obj = Notify(to, hospital, slots, age, date)
-            if email_obj.send_mail():
-                change_dataframe_data('district', index)
+            if to != []:
+                email_obj = Notify(to, hospital, slots, age, date)
+                if email_obj.send_mail():
+                    change_dataframe_data('district', index)
 
 
 def change_dataframe_data(type, index):
@@ -163,6 +168,7 @@ def saving_to_firebase():
     for i in range(len(df_pincode)):
         data = df_pincode.iloc[i].to_dict()
         db.collection('backupCowin').add(data)
+    print('Saved to Firebase')
 
 
 # Press the green button in the gutter to run the script.
@@ -187,7 +193,7 @@ if __name__ == '__main__':
 
             usersRef = db.collection('cowinUsers')
             testusersRef = db.collection('testCowinUsers')
-            users_table = usersRef
+            users_table = testusersRef
             get_endpoint_data_to_pandas(users_table)
             save_in_local()
 
@@ -198,7 +204,7 @@ if __name__ == '__main__':
 
             firebase_counter += 1
 
-            if firebase_counter == 12:
+            if firebase_counter == 2:
                 saving_to_firebase()
                 firebase_counter = 0
 
