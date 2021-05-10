@@ -39,7 +39,7 @@ def get_endpoint_data_to_pandas(users_table):
             data_dict['pincode'] = each.to_dict()['pincode']
             data_dict['optin'] = each.to_dict()['optin']
             data_dict['last_sent_mail'] = last_sent_mail
-            print(data_dict['last_sent_mail'])
+            # print(data_dict['last_sent_mail'])
             data_dict['type'] = each.to_dict()['type']
             data_dict['no_of_mails_sent'] = 0
 
@@ -174,6 +174,14 @@ def saving_to_firebase():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     flag_first_time = input("Is this the first time? 1/0: ")
+    if flag_first_time == 1:
+        global df_pincode
+        global df_district
+        df_pincode = pd.read_csv('pincode.csv')
+        df_pincode['last_sent_mail'] = pd.to_datetime(df_pincode["last_sent_mail"])
+        df_district = pd.read_csv('district.csv')
+        df_district['last_sent_mail'] = pd.to_datetime(df_district["last_sent_mail"])
+        remove_duplicates()
 
     while True:
         try:
@@ -187,9 +195,7 @@ if __name__ == '__main__':
             test_response = requests.get(test_url, headers={"accept": "application/json", "Accept-Language": "hi_IN",
                                                           "user-agent": "Mozilla/5.0 (X11; Fedora; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36"}).json()['centers']
             # print("Cowin API Working")
-            if flag_first_time == 1:
-                df_pincode = pd.read_csv('pincode.csv')
-                df_district = pd.read_csv('district.csv')
+
 
             usersRef = db.collection('cowinUsers')
             testusersRef = db.collection('testCowinUsers')
