@@ -105,7 +105,7 @@ def get_email_and_index(type, value):
 
 def check_availabilty_pincode(pin_list):
     for pincode in pin_list:
-        pin_obj = SlotAvailableByID(target=pincode, mode = "Pin", age=45)
+        pin_obj = SlotAvailableByID(target=pincode, mode = "Pin")
         pin_obj.get_slot_availability()
         flag, hospital, slots, age, date = pin_obj.return_list[0], pin_obj.return_list[1], pin_obj.return_list[2], pin_obj.return_list[3],pin_obj.return_list[4]
         if flag == True:
@@ -117,7 +117,7 @@ def check_availabilty_pincode(pin_list):
 
 def check_availabilty_district(dist_list):
     for district_id in dist_list:
-        dist_obj = SlotAvailableByID(target=district_id, mode = "District", age=45)
+        dist_obj = SlotAvailableByID(target=district_id, mode = "District")
         dist_obj.get_slot_availability()
         flag, hospital, slots, age, date = dist_obj.return_list[0], dist_obj.return_list[1], dist_obj.return_list[2], dist_obj.return_list[3], dist_obj.return_list[4]
         if flag == True:
@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
             usersRef = db.collection('cowinUsers')
             testusersRef = db.collection('testCowinUsers')
-            users_table = testusersRef
+            users_table = usersRef
             get_endpoint_data_to_pandas(users_table)
             save_in_local()
 
@@ -204,7 +204,7 @@ if __name__ == '__main__':
 
             firebase_counter += 1
 
-            if firebase_counter == 2:
+            if firebase_counter == 12:
                 saving_to_firebase()
                 firebase_counter = 0
 
