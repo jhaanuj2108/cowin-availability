@@ -9,6 +9,10 @@ import pandas as pd
 from firebase_admin import credentials
 from firebase_admin import firestore
 import firebase_admin
+
+import warnings
+warnings.filterwarnings("ignore")
+
 cred = credentials.Certificate('key.json')
 firebase_admin.initialize_app(cred)
 db = firestore.client()
@@ -194,7 +198,7 @@ if __name__ == '__main__':
 
             firebase_counter += 1
 
-            if saving_to_firebase == 12:
+            if firebase_counter == 12:
                 saving_to_firebase()
                 firebase_counter = 0
 
